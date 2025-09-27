@@ -35,6 +35,42 @@ def normalize_instructor(df: pd.DataFrame) -> None:
     df["Instructor"] = df["Instructor"].apply(normalize)
 
 
+def get_simplified_major(df: pd.DataFrame) -> None:
+    def simplify(major: str) -> str:
+        if pd.isna(major):
+            return major
+        majors = major.split(",")
+        simplified_majors = set()
+        for m in majors:
+            if all(
+                x not in m
+                for x in [
+                    "计算机学院计算机科学与技术",
+                    "计算机学院信息与计算科学",
+                    "计算机学院金融工程",
+                    "匡亚明学院",
+                ]
+            ):
+                continue
+            if "拔尖计划" in m and "计算机科学与技术" in m:
+                simplified_majors.add("计拔")
+            elif "强基计划" in m and "信息与计算科学" in m:
+                simplified_majors.add("信计")
+            elif "至诚班" in m and "计算机科学与技术" in m:
+                simplified_majors.add("至诚")
+            elif "匡亚明学院" in m:
+                simplified_majors.add("匡计")
+            elif "计算机学院金融工程" in m:
+                simplified_majors.add("计金")
+            elif "计算机科学与技术" in m:
+                simplified_majors.add("计科")
+            else:
+                simplified_majors.add(m)
+        return ",".join(sorted(simplified_majors))
+
+    df["SimplifiedMajor"] = df["Major"].apply(simplify)
+
+
 def sort_and_deduplicate(df: pd.DataFrame) -> pd.DataFrame:
     df = (
         df.sort_values("Term")
@@ -50,7 +86,8 @@ def work(input_files: list[str], output_file: str) -> None:
     for input_file in input_files:
         df = pd.read_csv(filepath_or_buffer=input_file)
         mask_major = df["SKBJ"].str.contains(
-            "计算机学院计算机科学与技术|计算机学院信息与计算科学", na=False
+            "计算机学院计算机科学与技术|计算机学院信息与计算科学",
+            na=False,
         )
         mask_kind = ~df["TXKCLB_DISPLAY"].isin(["思政课", "英语课", "军事课"])
         df = df[mask_major & mask_kind]
@@ -68,6 +105,7 @@ def work(input_files: list[str], output_file: str) -> None:
         total_df = pd.concat([total_df, converted_df], ignore_index=True)
 
     normalize_instructor(total_df)
+    get_simplified_major(total_df)
     total_df = sort_and_deduplicate(total_df)
     total_df.to_csv(path_or_buf=output_file, index=False)
 
