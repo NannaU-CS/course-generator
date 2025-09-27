@@ -52,7 +52,9 @@ def get_simplified_major(df: pd.DataFrame) -> None:
                 ]
             ):
                 continue
-            if "拔尖计划" in m and "计算机科学与技术" in m:
+            if ("拔尖计划" in m and "计算机科学与技术" in m) or (
+                "匡亚明学院英才计划（计算机班）" in m
+            ):
                 simplified_majors.add("计拔")
             elif "强基计划" in m and "信息与计算科学" in m:
                 simplified_majors.add("信计")
@@ -86,7 +88,7 @@ def work(input_files: list[str], output_file: str) -> None:
     for input_file in input_files:
         df = pd.read_csv(filepath_or_buffer=input_file)
         mask_major = df["SKBJ"].str.contains(
-            "计算机学院计算机科学与技术|计算机学院信息与计算科学",
+            "计算机学院计算机科学与技术|计算机学院信息与计算科学|匡亚明学院英才计划（计算机班）",
             na=False,
         )
         mask_kind = ~df["TXKCLB_DISPLAY"].isin(["思政课", "英语课", "军事课"])
